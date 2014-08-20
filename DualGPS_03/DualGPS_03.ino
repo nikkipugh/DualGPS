@@ -12,6 +12,9 @@ long logInterval = 1000;  //  >=1000 to avoid duplicates
 long lat1,lon1, lat2, lon2;
 unsigned long GPSDifferenceValue;
 
+unsigned long currentLogTime = 0;
+
+
 
 SoftwareSerial solenoidDriver(47, 49); // RX, TX
 boolean currentConfined = 0; //for storing whether currently feel confined or not
@@ -37,134 +40,149 @@ void setup()
 
 void loop()
 {
-  unsigned long currentLogTime = millis();
-  GPS2.feedgps(); // make sure GPS2 data is up to date
-  if (GPS1.feedgps() ){  // if have got a valid sentence
-    if(currentLogTime - previousLogTime > logInterval) { // if we've waited long enough since the last reading, then log the data
-      // save the last time you logged
-      previousLogTime = currentLogTime;  
-      GPS1.gpsdump();
-      GPS2.gpsdump();
+  currentLogTime = millis();
 
-      // Serial.print(F("Difference, "));
-      lat1 = GPS1.get_most_recentLat(1); 
-      lon1 = GPS1.get_most_recentLng(1); 
-      lat2 = GPS2.get_most_recentLat(2); 
-      lon2 = GPS2.get_most_recentLng(2); 
+  if(currentLogTime - previousLogTime > logInterval) { // if we've waited long enough since the last reading, then log the data
+    // save the last time you logged
 
-      GPSDifferenceValue = GPS1.getGPSDifference(lon1, lon2, lat1, lat2);
-      //decide whether this is too confined or not (and for how long)
+   // GPS2.feedgps();
+    if (GPS1.feedgps()){  // if have got a valid sentence on 1
+      if (GPS2.feedgps()){  // AND if have got a valid sentence on 1
+        previousLogTime = currentLogTime;  
+        GPS1.gpsdump();
+        GPS2.gpsdump();
 
-      if(   GPSDifferenceValue >= confinedThresholdPow2  && previousConfined == 0)   //transitioned to being too confined
-      {
-        currentConfined = 1;
-        confinedStart = millis(); 
-        solenoidDriver.print("1");
+        // Serial.print(F("Difference, "));
+        lat1 = GPS1.get_most_recentLat(1); 
+        lon1 = GPS1.get_most_recentLng(1); 
+        lat2 = GPS2.get_most_recentLat(2); 
+        lon2 = GPS2.get_most_recentLng(2); 
 
-      }
+        GPSDifferenceValue = GPS1.getGPSDifference(lon1, lon2, lat1, lat2);
+        //decide whether this is too confined or not (and for how long)
 
-      if (GPSDifferenceValue < confinedThresholdPow2 && previousConfined == 1)  // transitioned from being too confined
-      {  
-        currentConfined = 0;  
-        confinedStart = 0;  
-        confinedTimer = 0;  
-        // solenoidDriver.print("0");
+        if(   GPSDifferenceValue >= confinedThresholdPow2  && previousConfined == 0)   //transitioned to being too confined
+        {
+          currentConfined = 1;
+          confinedStart = millis(); 
+          solenoidDriver.print("1");
+
+        }
+
+        if (GPSDifferenceValue < confinedThresholdPow2 && previousConfined == 1)  // transitioned from being too confined
+        {  
+          currentConfined = 0;  
+          confinedStart = 0;  
+          confinedTimer = 0;  
+          // solenoidDriver.print("0");
 
 
-      }
+        }
 
-      if (currentConfined ==1 && previousConfined == 1)  {  //still confined - time it
-        confinedTimer = millis();   
+        if (currentConfined ==1 && previousConfined == 1)  {  //still confined - time it
+          confinedTimer = millis();   
 
-        if (confinedTimer - confinedStart >= confinedMaxDuration) {  // have been confined for too long!
-          distressedFlag = 1;
-          //  solenoidDriver.print("2");
+          if (confinedTimer - confinedStart >= confinedMaxDuration) {  // have been confined for too long!
+            distressedFlag = 1;
+            //  solenoidDriver.print("2");
+          }
+
+
+        }  
+
+
+        previousConfined = currentConfined;  // update previousConfined ready for next time around
+
+
+          Serial.print(currentConfined); 
+        Serial.print(F(","));  
+        Serial.print(confinedTimer); 
+        Serial.print(F(","));  
+        Serial.print(distressedFlag); 
+        Serial.print(F(","));  
+
+        Serial3.print(currentConfined); 
+        Serial3.print(F(","));  
+        Serial3.print(confinedTimer); 
+        Serial3.print(F(","));  
+        Serial3.print(distressedFlag); 
+        Serial3.print(F(",")); 
+
+
+
+        //affect the heart rate
+        if (currentConfined == 0 && distressedFlag == 0)  // all good - relaxed heartrate
+        { 
+          Serial.print(0); 
+          solenoidDriver.print("0");
+          Serial3.print(0); 
+        }
+
+        if (currentConfined == 1 && distressedFlag == 0) // feeling a bit twitchy
+        {
+          Serial.print(1); 
+          solenoidDriver.print("1");
+          Serial3.print(1); 
         }
 
 
-      }  
+        if (distressedFlag == 1) // game over
+        { 
+          Serial.print(2); 
+          solenoidDriver.print("2");
+          Serial3.print(2); 
+        }
+
+        Serial.println();
+        Serial3.println();
 
 
-      previousConfined = currentConfined;  // update previousConfined ready for next time around
+        if (distressedFlag == 1) 
+        {
+
+          //   while(true) {
+          //just resting
+          // }
+
+        }
+
+      }  //end GPS2 feed gps
+    }  //end GPS1 feed gps
 
 
-        Serial.print(currentConfined); 
-      Serial.print(F(","));  
-      Serial.print(confinedTimer); 
-      Serial.print(F(","));  
-      Serial.print(distressedFlag); 
-      Serial.print(F(","));  
-
-      Serial3.print(currentConfined); 
-      Serial3.print(F(","));  
-      Serial3.print(confinedTimer); 
-      Serial3.print(F(","));  
-      Serial3.print(distressedFlag); 
-      Serial3.print(F(",")); 
+  } // end logging timer
 
 
 
-      //affect the heart rate
-      if (currentConfined == 0 && distressedFlag == 0)  // all good - relaxed heartrate
-      { 
-        Serial.print(0); 
-        solenoidDriver.print("0");
-        Serial3.print(0); 
-      }
-
-      if (currentConfined == 1 && distressedFlag == 0) // feeling a bit twitchy
-      {
-        Serial.print(1); 
-        solenoidDriver.print("1");
-        Serial3.print(1); 
-      }
-
-
-      if (distressedFlag == 1) // game over
-      { 
-        Serial.print(2); 
-        solenoidDriver.print("2");
-        Serial3.print(2); 
-      }
-
-      Serial.println();
-      Serial3.println();
-
-
-      if (distressedFlag == 1) 
-      {
-
-        //   while(true) {
-        //just resting
-        // }
-
-      }
-
-
-    } // end logging timer
-
-
-  }  //end GPS1 feed gps
+/*
+ if time interval has passed 
+ {
   
+  Do we have a sentence on GPS1 ?
+  Do we have a sentence on GPS2 ?
   
-  // have no signal on GPS 1
+  If yes on 1 and 2, do normal logging, save lat lon into memory variables
   
+  If yes on 1 but not on 2, use new 1 values and save into memory, use 2 values from memory
   
-  // have no signal on GPS 2
+  If no on 1 but yes on 2, use 1 values from memory, use new 2 values and save into memory
   
+  do difference calculations on whatever values we have.
+  update heartbeat and servos
   
-  
-  // have no signal on GPS 1 or 2
-  
-  
-  
-  
-  
-  
+  }
+
+*/
+
+
+
+
+
 
   // continuously executed code in here
 
 }//end loop
+
 
 
 
