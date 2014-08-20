@@ -32,13 +32,17 @@ unsigned long confinedTimer = 0;
 
 void setup()
 {
+  pinMode(14,INPUT_PULLUP);
   Serial.begin(115200);
   Serial3.begin(4800);
   solenoidDriver.begin(4800);
   GPS1.serialBegin(1, 1, 4800);
   GPS2.serialBegin(2, 2, 4800);
 
-  Serial.println("--------------------------------------------------------------------------------------------------------------------------------------");
+  Serial.println("GPS1Label,GPS1date,GPS1time,GPS1hdop,GPS1sats,GPS1flat,GPS1flon,GPS1alt,GPS1course,GPS1speed,GPS2Label,GPS2date,GPS2time,GPS2hdop,GPS2sats,GPS2flat,GPS2flon,GPS2alt,GPS2course,GPS2speed,GPSDifference,currentConfined,confinedTimer,distressedFlag,solenoidDriver");
+  Serial3.println("GPS1Label,GPS1date,GPS1time,GPS1hdop,GPS1sats,GPS1flat,GPS1flon,GPS1alt,GPS1course,GPS1speed,GPS2Label,GPS2date,GPS2time,GPS2hdop,GPS2sats,GPS2flat,GPS2flon,GPS2alt,GPS2course,GPS2speed,GPSDifference,currentConfined,confinedTimer,distressedFlag,solenoidDriver");
+
+
 }
 
 void loop()
