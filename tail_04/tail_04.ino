@@ -2,7 +2,7 @@
 VarSpeedServo tailServo;  // create servo object to control a servo 
 // a maximum of eight servo objects can be created 
 
-const int tailPin = 9;  // the digital pin used for the servo
+const int tailPin = 7;  // the digital pin used for the servo
 
 int tailPos = 0;    // variable to store the servo position char c ;
 
@@ -18,23 +18,25 @@ servoSequencePoint allgood[] = {
 
 servoSequencePoint uneasy[] = {
   {
-    30,15            }
+    60,15            }
   ,{
-    70,15            }
+    110,15            }
 };
 
 servoSequencePoint uncomfortable[] = {
   {
-    20,15            }
+   110,35            }
   ,{
-    120,15            }
+    180,45            }
 };
 
 servoSequencePoint thrashing[] = {
   {
-    0, 145            }
+    0, 200            }
   ,{
-    150, 145            }
+    177, 145            }
+    ,{
+    180, 50            }
 };
 
 char c=0;
@@ -81,7 +83,7 @@ void loop()
     }
         if (c == '3')
     {
-      tailServo.sequencePlay(thrashing, 2);
+      tailServo.sequencePlay(thrashing, 3);
     }
 
   
